@@ -70,20 +70,59 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+
+    .gh-btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: #24292e; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.88em; font-weight: 600; }
+    .gh-btn:hover { background: #3a4049; }
+    .gh-btn svg { width: 16px; height: 16px; fill: white; flex-shrink: 0; }
+
+    .user-pill { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px 5px 5px; background: #f0fdf4; border: 1px solid #22c55e; border-radius: 999px; font-size: 0.85em; }
+    .user-pill img { width: 24px; height: 24px; border-radius: 50%; }
+    .user-pill .logout-btn { background: none; border: none; cursor: pointer; color: #888; font-size: 0.82em; padding: 0; margin-left: 4px; }
+    .user-pill .logout-btn:hover { color: #dc2626; }
+
+    .divider { display: flex; align-items: center; gap: 10px; color: #999; font-size: 0.8em; margin: 12px 0; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #e5e7eb; }
   </style>
 </head>
 <body>
 
 <h1>RLHF Preference Collector</h1>
 
-<!-- API Keys -->
+<!-- Auth -->
 <div class="card">
-  <label>OpenAI API Key</label>
-  <div class="row">
-    <input type="password" id="apiKey" placeholder="sk-...">
-    <button class="btn btn-primary" onclick="saveKey()">Save</button>
+  <div id="authSection">
+    <div id="ghLoggedIn" class="hidden">
+      <label>Signed in with GitHub</label>
+      <div style="margin-top:6px;">
+        <span class="user-pill">
+          <img id="ghAvatar" src="" alt="">
+          <span id="ghUsername"></span>
+          <button class="logout-btn" onclick="logout()">Sign out</button>
+        </span>
+        <span class="meta" style="margin-left:10px;">Using GitHub Models · gpt-4o-mini (free)</span>
+      </div>
+    </div>
+
+    <div id="ghLoggedOut">
+      <label>Authentication</label>
+      <div style="margin-top:6px;">
+        <button class="gh-btn" onclick="startLogin()">
+          <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          Sign in with GitHub
+        </button>
+        <span class="meta" style="margin-left:10px;">Uses GitHub Models — no API key needed</span>
+      </div>
+
+      <div class="divider">or use your own OpenAI key</div>
+
+      <label>OpenAI API Key</label>
+      <div class="row">
+        <input type="password" id="apiKey" placeholder="sk-...">
+        <button class="btn btn-primary" onclick="saveKey()">Save</button>
+      </div>
+      <div class="meta" style="margin-top:6px;">Stored in localStorage only. Model: gpt-4o-mini</div>
+    </div>
   </div>
-  <div class="meta" style="margin-top:6px;">Stored in localStorage only. Model: gpt-4o-mini</div>
 </div>
 
 <!-- Prompt Input -->
@@ -166,6 +205,72 @@ const PROMPTS = [
   "My company's AI product works well for most users but I've found it consistently underperforms for non-English speakers. Fixing it would delay the launch. What should I do?",
 ];
 
+// ── GitHub OAuth ──────────────────────────────────────────────────────────────
+const GH_CLIENT_ID  = 'PLACEHOLDER'; // replace after creating OAuth App
+const GH_PROXY_URL  = 'https://cors-proxy.jonasneves.workers.dev';
+const GH_MODELS_URL = 'https://models.inference.ai.azure.com/chat/completions';
+const GH_STORAGE    = 'lab6-auth';
+
+function getGHAuth() {
+  try { return JSON.parse(localStorage.getItem(GH_STORAGE)); } catch { return null; }
+}
+
+function startLogin() {
+  const state = crypto.randomUUID();
+  sessionStorage.setItem('oauth_state', state);
+  const params = new URLSearchParams({
+    client_id: GH_CLIENT_ID,
+    redirect_uri: window.location.origin + '/aipi590-lab6/',
+    scope: 'read:user',
+    state,
+  });
+  window.location.href = 'https://github.com/login/oauth/authorize?' + params;
+}
+
+async function handleCallback() {
+  const params = new URLSearchParams(window.location.search);
+  const code  = params.get('code');
+  const state = params.get('state');
+  if (!code || !state) return;
+
+  const storedState = sessionStorage.getItem('oauth_state');
+  sessionStorage.removeItem('oauth_state');
+  window.history.replaceState({}, '', window.location.pathname);
+
+  if (state !== storedState) throw new Error('State mismatch');
+
+  const res = await fetch(GH_PROXY_URL + '/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ client_id: GH_CLIENT_ID, code, redirect_uri: window.location.origin + '/aipi590-lab6/' }),
+  });
+  const data = await res.json();
+  if (data.error || !data.access_token) throw new Error(data.error_description || 'Login failed');
+
+  localStorage.setItem(GH_STORAGE, JSON.stringify({ token: data.access_token, user: data.user }));
+  renderAuthState();
+}
+
+function logout() {
+  localStorage.removeItem(GH_STORAGE);
+  renderAuthState();
+}
+
+function renderAuthState() {
+  const auth = getGHAuth();
+  document.getElementById('ghLoggedIn').classList.toggle('hidden', !auth);
+  document.getElementById('ghLoggedOut').classList.toggle('hidden', !!auth);
+  if (auth?.user) {
+    document.getElementById('ghAvatar').src = auth.user.avatar_url;
+    document.getElementById('ghUsername').textContent = auth.user.login;
+  }
+}
+
+// Handle OAuth redirect on page load
+if (window.location.search.includes('code=')) {
+  handleCallback().catch(e => console.error('[auth]', e.message));
+}
+
 // ── Supabase ──────────────────────────────────────────────────────────────────
 const SUPABASE_URL = 'https://mkjwvkaasuhdgmgdgmvc.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_py30014paACSfymw9BNoUQ_Ppysqtpx';
@@ -221,6 +326,7 @@ let history = [];
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 (async function init() {
+  renderAuthState();
   const savedKey = localStorage.getItem('rlhf_api_key');
   if (savedKey) document.getElementById('apiKey').value = savedKey;
 
@@ -268,22 +374,25 @@ function esc(s) {
 
 // ── API Call ──────────────────────────────────────────────────────────────────
 async function callAPI(prompt, temperature) {
-  const apiKey = localStorage.getItem('rlhf_api_key') || document.getElementById('apiKey').value.trim();
-  if (!apiKey) throw new Error('No API key. Enter and save your OpenAI key above.');
-
+  const ghAuth = getGHAuth();
   const t0 = Date.now();
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+
+  let url, token, model;
+  if (ghAuth) {
+    url   = GH_MODELS_URL;
+    token = ghAuth.token;
+    model = 'openai/gpt-4o-mini';
+  } else {
+    url   = 'https://api.openai.com/v1/chat/completions';
+    token = localStorage.getItem('rlhf_api_key') || document.getElementById('apiKey').value.trim();
+    model = 'gpt-4o-mini';
+    if (!token) throw new Error('Sign in with GitHub or enter an OpenAI API key above.');
+  }
+
+  const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      max_tokens: 512,
-      temperature,
-      messages: [{ role: 'user', content: prompt }],
-    }),
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model, max_tokens: 512, temperature, messages: [{ role: 'user', content: prompt }] }),
   });
 
   if (!res.ok) {
