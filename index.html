@@ -649,7 +649,7 @@ async function callAPI(prompt, temperature) {
   if (ghAuth) {
     url   = GH_MODELS_URL;
     token = ghAuth.token;
-    model = 'openai/gpt-4o-mini';
+    model = 'gpt-4o-mini';
   } else {
     url   = 'https://api.openai.com/v1/chat/completions';
     token = localStorage.getItem('rlhf_api_key') || document.getElementById('apiKey').value.trim();
