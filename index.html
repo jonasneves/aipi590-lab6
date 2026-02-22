@@ -8,10 +8,10 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: system-ui, sans-serif; max-width: 1100px; margin: 0 auto; padding: 20px; background: #f5f5f5; color: #111; }
     h1 { margin-bottom: 20px; font-size: 1.4em; }
-    h2 { font-size: 1em; }
-    h3 { font-size: 0.95em; color: #555; margin-bottom: 8px; }
+    h2 { font-size: 1.05em; font-weight: 600; }
+    h3 { font-size: 0.8em; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin-bottom: 10px; }
 
-    .card { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 14px; }
+    .card { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
 
     label { display: block; font-weight: 600; font-size: 0.85em; margin-bottom: 5px; }
 
@@ -30,12 +30,12 @@
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-danger { background: #dc2626; color: white; border-color: #dc2626; }
 
-    #status { display: inline-block; padding: 6px 12px; border-radius: 6px; font-size: 0.84em; margin-left: 10px; }
+    #status { display: inline-block; padding: 6px 12px; border-radius: 6px; font-size: 0.84em; }
     .status-loading { background: #fef3c7; color: #92400e; }
     .status-success { background: #d1fae5; color: #065f46; }
     .status-error { background: #fee2e2; color: #991b1b; }
 
-    .responses-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .responses-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
 
     .response-card { background: white; border: 2px solid #ddd; border-radius: 8px; padding: 14px; min-height: 180px; }
     .response-card.winner { border-color: #22c55e; background: #f0fdf4; }
@@ -44,7 +44,7 @@
     .response-text { white-space: pre-wrap; font-size: 0.9em; line-height: 1.6; color: #222; }
     .meta { font-size: 0.75em; color: #888; margin-top: 8px; }
 
-    .pref-row { display: flex; gap: 12px; justify-content: center; margin: 4px 0 16px; }
+    .pref-row { display: flex; gap: 12px; justify-content: center; margin: 16px 0; }
     .pref-btn {
       padding: 10px 28px; border-radius: 8px; border: 2px solid #ccc;
       cursor: pointer; font-size: 0.92em; font-weight: 600; background: white;
@@ -145,14 +145,14 @@
     </select>
   </div>
 
-  <div style="margin-top:12px; display:flex; align-items:center;">
+  <div style="margin-top:12px;">
     <button class="btn btn-primary" id="genBtn" onclick="generate()">Generate Two Responses</button>
-    <span id="status" class="hidden"></span>
+    <div id="status" class="hidden" style="margin-top:10px;"></div>
   </div>
 </div>
 
 <!-- Responses -->
-<div id="responsesSection" class="hidden">
+<div id="responsesSection" class="hidden card">
   <div class="responses-grid">
     <div class="response-card" id="cardA">
       <h3>Response A</h3>
