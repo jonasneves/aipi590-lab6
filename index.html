@@ -428,6 +428,33 @@
       font-size: 0.875rem;
       color: var(--text-muted);
     }
+
+    /* ── DB status indicator ─────────────────────────────── */
+    .db-status {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    .db-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--text-faint);
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    .db-dot.connected  { background: var(--green); }
+    .db-dot.syncing    { background: var(--accent); animation: pulse 1s ease-in-out infinite; }
+    .db-dot.error      { background: var(--red); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.35; }
+    }
   </style>
 </head>
 <body>
@@ -523,9 +550,15 @@
 <!-- History -->
 <div class="card">
   <div class="section-header">
-    <div class="section-title">
-      Collected Preferences
-      <span class="count-badge" id="countBadge">0</span>
+    <div>
+      <div class="section-title">
+        Collected Preferences
+        <span class="count-badge" id="countBadge">0</span>
+      </div>
+      <div class="db-status">
+        <span class="db-dot" id="dbDot"></span>
+        <span id="dbLabel">Connecting…</span>
+      </div>
     </div>
     <div style="display:flex; gap:8px;">
       <button class="btn btn-secondary" onclick="exportJSONL()">Export JSONL</button>
@@ -698,11 +731,14 @@ let history = [];
   });
 
   setStatus('<span class="spinner"></span> Loading history…', 'loading');
+  setDbStatus('syncing', 'Connecting to Supabase…');
   try {
     history = await loadFromSupabase();
     setStatus(`Loaded ${history.length} entries.`, 'success');
+    setDbStatus('connected', 'Supabase · ' + history.length + ' rows');
   } catch (e) {
     setStatus('Could not load history: ' + e.message, 'error');
+    setDbStatus('error', 'Supabase unreachable');
   }
   renderHistory();
 })();
@@ -724,6 +760,13 @@ function setStatus(html, type) {
   el.innerHTML = html;
   el.className = 'status-' + type;
   el.classList.remove('hidden');
+}
+
+function setDbStatus(state, label) {
+  const dot = document.getElementById('dbDot');
+  const lbl = document.getElementById('dbLabel');
+  dot.className = 'db-dot ' + state;
+  lbl.textContent = label;
 }
 
 function esc(s) {
@@ -850,15 +893,18 @@ function prefer(choice) {
 
   currentSession = null;
   setStatus('<span class="spinner"></span> Saving…', 'loading');
+  setDbStatus('syncing', 'Saving to Supabase…');
 
   saveToSupabase(record)
     .then(() => {
       history.unshift(record);
       renderHistory();
       setStatus(`Preference saved. Ready for the next prompt.`, 'success');
+      setDbStatus('connected', 'Supabase · ' + history.length + ' rows');
     })
     .catch(e => {
       setStatus(`Save failed: ${e.message}`, 'error');
+      setDbStatus('error', 'Supabase unreachable');
       document.querySelectorAll('.pref-btn').forEach(b => b.disabled = false);
     });
 }
@@ -913,13 +959,16 @@ function exportJSONL() {
 async function clearAll() {
   if (!confirm('Delete all preferences from Supabase? This cannot be undone.')) return;
   setStatus('<span class="spinner"></span> Deleting…', 'loading');
+  setDbStatus('syncing', 'Deleting from Supabase…');
   try {
     await deleteFromSupabase();
     history = [];
     renderHistory();
     setStatus('All preferences deleted.', 'success');
+    setDbStatus('connected', 'Supabase · 0 rows');
   } catch (e) {
     setStatus('Delete failed: ' + e.message, 'error');
+    setDbStatus('error', 'Supabase unreachable');
   }
 }
 </script>
