@@ -46,38 +46,55 @@
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg:             #000000;
+        /* Surfaces — layered grays, not pure black */
+        --bg:             #111111;
         --card-bg:        #1c1c1e;
-        --card-bg-2:      #2c2c2e;
-        --text-primary:   #ffffff;
-        --text-secondary: #aeaeb2;
+        --card-bg-2:      #242426;
+
+        /* Text — off-white reduces glare on extended use */
+        --text-primary:   #f5f5f7;
+        --text-secondary: #98989d;
         --text-muted:     #636366;
-        --text-faint:     #3a3a3c;
-        --border:         #38383a;
+        --text-faint:     #48484a;
+
+        /* Borders */
+        --border:         #3a3a3c;
         --border-light:   #2c2c2e;
-        --separator:      #2c2c2e;
+        --separator:      #222224;
+
+        /* System accent colors (lighter/desaturated for dark bg) */
         --accent:         #0a84ff;
         --accent-hover:   #409cff;
         --green:          #30d158;
         --red:            #ff453a;
         --red-hover:      #ff6961;
         --purple:         #bf5af2;
+
+        /* Controls */
         --input-bg:       #2c2c2e;
         --btn-2-bg:       #2c2c2e;
         --btn-2-hover:    #3a3a3c;
         --gh-bg:          #2c2c2e;
         --gh-hover:       #3a3a3c;
-        --pill-bg:        #0a2e1a;
-        --winner-bg:      #0a2e1a;
-        --status-load-bg: #2d2200; --status-load-fg: #ffd60a;
-        --status-ok-bg:   #0a2e1a; --status-ok-fg:   #30d158;
-        --status-err-bg:  #2e0a0a; --status-err-fg:  #ff453a;
-        --badge-a-bg:     #001433;
-        --badge-b-bg:     #1e0033;
-        --badge-tie-bg:   #2c2c2e; --badge-tie-fg: #aeaeb2;
-        --pref-a-hover:   #001433;
-        --pref-b-hover:   #1e0033;
-        --pref-tie-hover: #2c2c2e;
+
+        /* Tinted surfaces — rgba so they layer naturally */
+        --pill-bg:        rgba(48, 209, 88, 0.12);
+        --winner-bg:      rgba(48, 209, 88, 0.10);
+
+        /* Status backgrounds as subtle tints */
+        --status-load-bg: rgba(255, 214, 10, 0.12); --status-load-fg: #ffd60a;
+        --status-ok-bg:   rgba(48, 209, 88, 0.12);  --status-ok-fg:   #30d158;
+        --status-err-bg:  rgba(255, 69, 58, 0.12);  --status-err-fg:  #ff6961;
+
+        /* Badge tints */
+        --badge-a-bg:     rgba(10, 132, 255, 0.18);
+        --badge-b-bg:     rgba(191, 90, 242, 0.18);
+        --badge-tie-bg:   rgba(255, 255, 255, 0.08); --badge-tie-fg: #98989d;
+
+        /* Pref button hover tints */
+        --pref-a-hover:   rgba(10, 132, 255, 0.12);
+        --pref-b-hover:   rgba(191, 90, 242, 0.12);
+        --pref-tie-hover: rgba(255, 255, 255, 0.06);
       }
     }
 
