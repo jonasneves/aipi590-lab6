@@ -6,7 +6,7 @@
 //   4. Preference record is saved to Supabase (db.js)
 //   5. History list updates; dataset grows
 
-import { startLogin, logout, handleCallback, renderAuthState, saveOpenAIKey } from './auth.js';
+import { startLogin, logout, renderAuthState, saveOpenAIKey } from './auth.js';
 import { loadFromSupabase, saveToSupabase, deleteFromSupabase } from './db.js';
 import { PROMPTS, generateResponses } from './ai.js';
 
@@ -42,12 +42,6 @@ let history = [];          // in-memory mirror of the Supabase preferences table
   document.querySelectorAll('.pref-btn').forEach(btn => {
     btn.addEventListener('click', () => onPrefer(btn.dataset.pref));
   });
-
-  // Handle GitHub OAuth redirect back to the page
-  if (window.location.search.includes('code=')) {
-    await handleCallback().catch(e => console.error('[auth]', e.message));
-    renderAuthState();
-  }
 
   // Load preference history from Supabase
   setStatus('<span class="spinner"></span> Loading history…', 'loading');
