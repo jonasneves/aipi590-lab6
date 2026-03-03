@@ -62,7 +62,10 @@ export async function callAPI(prompt, temperature, fallbackToken = null) {
       model,
       max_tokens: 512,
       temperature,
-      messages: [{ role: 'user', content: prompt }],
+      messages: [
+        { role: 'system', content: 'Respond in 2-3 sentences. Be direct and practical.' },
+        { role: 'user', content: prompt },
+      ],
     }),
   });
 
