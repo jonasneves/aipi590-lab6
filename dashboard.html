@@ -49,24 +49,37 @@
   <div class="kpi-grid">
     <div class="card kpi-card">
       <div class="kpi-value" id="kpiN">—</div>
+      <div class="kpi-sub hidden" id="kpiNSub"></div>
       <label>Pairs analyzed</label>
     </div>
     <div class="card kpi-card">
       <div class="kpi-value" id="kpiSep">—</div>
+      <div class="kpi-sub hidden" id="kpiSepSub"></div>
       <label>Median separability</label>
     </div>
     <div class="card kpi-card">
       <div class="kpi-value" id="kpiLen">—</div>
+      <div class="kpi-sub hidden" id="kpiLenSub"></div>
       <label>Chosen is longer</label>
     </div>
     <div class="card kpi-card">
       <div class="kpi-value" id="kpiOverlap">—</div>
+      <div class="kpi-sub hidden" id="kpiOverlapSub"></div>
       <label>Mean lexical overlap</label>
     </div>
   </div>
 </div>
 
-<!-- Instant metric charts -->
+<!-- Compare CTA (appears after analysis) -->
+<div id="compareSection" class="hidden card" style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+  <div>
+    <div style="font-size:0.9rem; font-weight:600; color:var(--text-primary);">Compare with your collected data</div>
+    <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:2px;">Loads your Supabase pairs and overlays them on every chart.</div>
+  </div>
+  <button class="btn btn-secondary" id="compareBtn" style="flex-shrink:0;">Compare with my data</button>
+</div>
+
+<!-- Charts -->
 <div id="chartsSection" class="hidden">
 
   <div class="card">
@@ -81,7 +94,6 @@
     <div class="chart-container"><canvas id="chartOverlap"></canvas></div>
   </div>
 
-  <!-- Embedding-dependent charts (shown after embeddings compute) -->
   <div id="embedSection" class="hidden">
 
     <div class="card">
@@ -92,7 +104,7 @@
 
     <div class="card">
       <label>Embedding Space — PCA Projection</label>
-      <p class="chart-note">All chosen and rejected responses projected to 2D. Tight overlap between the two groups = difficult or ambiguous preference signal.</p>
+      <p class="chart-note">All responses projected to 2D. Tight overlap between chosen and rejected = ambiguous preference signal. Your data shown as triangles.</p>
       <div class="chart-container" style="height:340px;"><canvas id="chartScatter"></canvas></div>
     </div>
 

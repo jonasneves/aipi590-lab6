@@ -1,10 +1,10 @@
 // ── Dashboard Charts ───────────────────────────────────────────────────────
-// Chart.js wrappers. Each function creates (or replaces) a chart on a canvas.
+// Chart.js wrappers. Each render function accepts an optional `compare` array
+// for the second dataset (your Supabase data), shown as grouped bars.
 
 import { Chart, registerables } from 'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/+esm';
 Chart.register(...registerables);
 
-// Adapt to light/dark mode
 const dark      = window.matchMedia('(prefers-color-scheme: dark)').matches;
 const textColor = dark ? '#98989d' : '#6e6e73';
 const gridColor = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
@@ -12,6 +12,12 @@ const gridColor = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
 const BLUE   = 'rgba(10, 132, 255, 0.75)';
 const PURPLE = 'rgba(191, 90, 242, 0.75)';
 const GREEN  = 'rgba(52, 199, 89, 0.75)';
+const ORANGE = 'rgba(255, 159, 10, 0.75)';
+
+const legendOpts = {
+  display: true,
+  labels: { color: textColor, boxWidth: 10, font: { size: 11 } },
+};
 
 const baseScales = (xLabel, yLabel = 'Pairs') => ({
   x: {
@@ -33,7 +39,7 @@ const baseOpts = {
   plugins: { legend: { display: false } },
 };
 
-// ── Shared helpers ─────────────────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────────────────
 
 const _instances = {};
 
@@ -43,8 +49,10 @@ function mount(id, type, data, options) {
   _instances[id] = new Chart(ctx, { type, data, options });
 }
 
-function histogram(values, bins = 20) {
-  const mn = Math.min(...values), mx = Math.max(...values);
+// Bins values into `bins` buckets over `range` (defaults to [min, max]).
+function histogram(values, bins = 20, range = null) {
+  const mn = range ? range[0] : Math.min(...values);
+  const mx = range ? range[1] : Math.max(...values);
   const w  = (mx - mn) / bins || 1;
   const counts = new Array(bins).fill(0);
   const labels = Array.from({ length: bins }, (_, i) => (mn + i * w).toFixed(2));
@@ -55,50 +63,72 @@ function histogram(values, bins = 20) {
   return { labels, counts };
 }
 
+function histPair(primary, compare, bins = 20) {
+  const range = compare
+    ? [Math.min(...primary, ...compare), Math.max(...primary, ...compare)]
+    : null;
+  return {
+    primary: histogram(primary, bins, range),
+    compare: compare ? histogram(compare, bins, range) : null,
+  };
+}
+
 // ── Public render functions ────────────────────────────────────────────────
 
-export function renderLengthBiasChart(deltas) {
-  const { labels, counts } = histogram(deltas);
+export function renderLengthBiasChart(deltas, cmpDeltas = null) {
+  const { primary, compare } = histPair(deltas, cmpDeltas);
+  const datasets = [
+    { label: 'HH-RLHF',   data: primary.counts, backgroundColor: PURPLE, borderRadius: 3 },
+    ...(compare ? [{ label: 'Your data', data: compare.counts, backgroundColor: GREEN, borderRadius: 3 }] : []),
+  ];
   mount('chartLen', 'bar',
-    { labels, datasets: [{ data: counts, backgroundColor: PURPLE, borderRadius: 3 }] },
-    { ...baseOpts, scales: baseScales('Word count delta (chosen − rejected)') }
+    { labels: primary.labels, datasets },
+    { ...baseOpts, plugins: { legend: compare ? legendOpts : { display: false } },
+      scales: baseScales('Word count delta (chosen − rejected)') }
   );
 }
 
-export function renderOverlapChart(overlaps) {
-  const { labels, counts } = histogram(overlaps);
+export function renderOverlapChart(overlaps, cmpOverlaps = null) {
+  const { primary, compare } = histPair(overlaps, cmpOverlaps);
+  const datasets = [
+    { label: 'HH-RLHF',   data: primary.counts, backgroundColor: GREEN,  borderRadius: 3 },
+    ...(compare ? [{ label: 'Your data', data: compare.counts, backgroundColor: ORANGE, borderRadius: 3 }] : []),
+  ];
   mount('chartOverlap', 'bar',
-    { labels, datasets: [{ data: counts, backgroundColor: GREEN, borderRadius: 3 }] },
-    { ...baseOpts, scales: baseScales('Bigram Jaccard similarity') }
+    { labels: primary.labels, datasets },
+    { ...baseOpts, plugins: { legend: compare ? legendOpts : { display: false } },
+      scales: baseScales('Bigram Jaccard similarity') }
   );
 }
 
-export function renderSeparabilityChart(scores) {
-  const { labels, counts } = histogram(scores);
+export function renderSeparabilityChart(scores, cmpScores = null) {
+  const { primary, compare } = histPair(scores, cmpScores);
+  const datasets = [
+    { label: 'HH-RLHF',   data: primary.counts, backgroundColor: BLUE,   borderRadius: 3 },
+    ...(compare ? [{ label: 'Your data', data: compare.counts, backgroundColor: ORANGE, borderRadius: 3 }] : []),
+  ];
   mount('chartSep', 'bar',
-    { labels, datasets: [{ data: counts, backgroundColor: BLUE, borderRadius: 3 }] },
-    { ...baseOpts, scales: baseScales('Cosine distance (higher = more separable)') }
+    { labels: primary.labels, datasets },
+    { ...baseOpts, plugins: { legend: compare ? legendOpts : { display: false } },
+      scales: baseScales('Cosine distance (higher = more separable)') }
   );
 }
 
+// points: [{x,y}], labels: 'hh-chosen' | 'hh-rejected' | 'your-chosen' | 'your-rejected'
 export function renderScatterChart(points, labels) {
-  const chosen   = points.filter((_, i) => labels[i] === 'chosen');
-  const rejected = points.filter((_, i) => labels[i] === 'rejected');
+  const group = key => points.filter((_, i) => labels[i] === key);
   mount('chartScatter', 'scatter',
     {
       datasets: [
-        { label: 'Chosen',   data: chosen,   backgroundColor: BLUE,   pointRadius: 2.5 },
-        { label: 'Rejected', data: rejected,  backgroundColor: PURPLE, pointRadius: 2.5 },
+        { label: 'HH-RLHF chosen',   data: group('hh-chosen'),    backgroundColor: BLUE,   pointRadius: 2.5 },
+        { label: 'HH-RLHF rejected', data: group('hh-rejected'),  backgroundColor: PURPLE, pointRadius: 2.5 },
+        { label: 'Your chosen',      data: group('your-chosen'),  backgroundColor: GREEN,  pointRadius: 5, pointStyle: 'triangle' },
+        { label: 'Your rejected',    data: group('your-rejected'), backgroundColor: ORANGE, pointRadius: 5, pointStyle: 'triangle' },
       ],
     },
     {
       ...baseOpts,
-      plugins: {
-        legend: {
-          display: true,
-          labels: { color: textColor, boxWidth: 10, font: { size: 11 } },
-        },
-      },
+      plugins: { legend: legendOpts },
       scales: baseScales('PC 1', 'PC 2'),
     }
   );

@@ -2,6 +2,8 @@
 // Fetches preference pairs from the HuggingFace Datasets Server REST API.
 // No auth required for public datasets; CORS-open endpoint.
 
+import { loadFromSupabase } from './db.js';
+
 const HF_API = 'https://datasets-server.huggingface.co/rows';
 
 // HH-RLHF stores full multi-turn conversations. Extract the final assistant
@@ -46,4 +48,12 @@ export async function loadHHRLHF(n = 100, onProgress) {
   }
 
   return pairs.slice(0, n);
+}
+
+// Loads your own collected pairs from Supabase, filtering out ties.
+export async function loadSupabaseData() {
+  const rows = await loadFromSupabase();
+  return rows
+    .filter(r => r.chosen && r.rejected)
+    .map(r => ({ prompt: r.prompt || '', chosen: r.chosen, rejected: r.rejected }));
 }

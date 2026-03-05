@@ -441,6 +441,12 @@ textarea { resize: vertical; line-height: 1.55; }
   margin-bottom: 8px;
 }
 
+.kpi-sub {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
 .chart-container {
   position: relative;
   height: 220px;
