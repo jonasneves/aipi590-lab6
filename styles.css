@@ -414,6 +414,47 @@ textarea { resize: vertical; line-height: 1.55; }
   white-space: nowrap;
 }
 
+/* ── Dashboard ───────────────────────────────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+@media (max-width: 600px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.kpi-card {
+  text-align: center;
+  padding: 20px 16px 16px;
+  margin-bottom: 0;
+}
+
+.kpi-value {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.chart-container {
+  position: relative;
+  height: 220px;
+  margin-top: 12px;
+}
+
+.chart-note {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-top: 2px;
+}
+
+/* ── Empty state ─────────────────────────────────────── */
 .empty-state {
   text-align: center;
   padding: 32px 0;

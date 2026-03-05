@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title>DPO Data Quality Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="page-header">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+    <div>
+      <h1>DPO Data Quality</h1>
+      <p>Automatic quality analysis of the Anthropic HH-RLHF preference dataset — separability, length bias, and lexical overlap.</p>
+    </div>
+    <a href="index.html"
+       style="display:inline-flex; align-items:center; gap:6px; padding:7px 13px; background:var(--btn-2-bg); color:var(--text-primary); border-radius:8px; font-size:0.8rem; font-weight:600; text-decoration:none; white-space:nowrap; flex-shrink:0; margin-top:4px;">
+      ← Collector
+    </a>
+  </div>
+</div>
+
+<!-- Controls -->
+<div class="card">
+  <div style="display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap;">
+    <div style="flex:1; min-width:160px;">
+      <label>Dataset</label>
+      <div style="font-size:0.95rem; font-weight:500; color:var(--text-primary); padding:10px 14px; background:var(--card-bg-2); border:1px solid var(--border); border-radius:10px;">
+        Anthropic / HH-RLHF
+      </div>
+    </div>
+    <div style="min-width:140px;">
+      <label>Sample Size</label>
+      <select id="sampleSize">
+        <option value="50">50 pairs</option>
+        <option value="100" selected>100 pairs</option>
+        <option value="200">200 pairs</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" id="analyzeBtn" style="flex-shrink:0;">Analyze</button>
+  </div>
+  <div id="progress" class="hidden" style="margin-top:12px;"></div>
+</div>
+
+<!-- KPI grid -->
+<div id="kpiSection" class="hidden">
+  <div class="kpi-grid">
+    <div class="card kpi-card">
+      <div class="kpi-value" id="kpiN">—</div>
+      <label>Pairs analyzed</label>
+    </div>
+    <div class="card kpi-card">
+      <div class="kpi-value" id="kpiSep">—</div>
+      <label>Median separability</label>
+    </div>
+    <div class="card kpi-card">
+      <div class="kpi-value" id="kpiLen">—</div>
+      <label>Chosen is longer</label>
+    </div>
+    <div class="card kpi-card">
+      <div class="kpi-value" id="kpiOverlap">—</div>
+      <label>Mean lexical overlap</label>
+    </div>
+  </div>
+</div>
+
+<!-- Instant metric charts -->
+<div id="chartsSection" class="hidden">
+
+  <div class="card">
+    <label>Length Bias</label>
+    <p class="chart-note">Word count difference (chosen − rejected). A systematic positive shift means annotators rewarded verbosity, not quality.</p>
+    <div class="chart-container"><canvas id="chartLen"></canvas></div>
+  </div>
+
+  <div class="card">
+    <label>Lexical Overlap</label>
+    <p class="chart-note">Bigram Jaccard similarity between chosen and rejected. High overlap = near-duplicate pairs → weak DPO training signal.</p>
+    <div class="chart-container"><canvas id="chartOverlap"></canvas></div>
+  </div>
+
+  <!-- Embedding-dependent charts (shown after embeddings compute) -->
+  <div id="embedSection" class="hidden">
+
+    <div class="card">
+      <label>Separability</label>
+      <p class="chart-note">Cosine distance between chosen and rejected embeddings. Low values mean the model has little signal to distinguish preferred from rejected.</p>
+      <div class="chart-container"><canvas id="chartSep"></canvas></div>
+    </div>
+
+    <div class="card">
+      <label>Embedding Space — PCA Projection</label>
+      <p class="chart-note">All chosen and rejected responses projected to 2D. Tight overlap between the two groups = difficult or ambiguous preference signal.</p>
+      <div class="chart-container" style="height:340px;"><canvas id="chartScatter"></canvas></div>
+    </div>
+
+  </div>
+</div>
+
+<script type="module" src="src/dashboard-app.js"></script>
+</body>
+</html>
