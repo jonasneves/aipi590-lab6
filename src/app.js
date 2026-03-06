@@ -1,18 +1,9 @@
-// ── Layer 4: RLHF Orchestration ────────────────────────────────────────────────
-// Wires together auth, AI, and DB layers into the preference-collection loop:
-//   1. User enters a prompt and clicks Generate
-//   2. Two responses are fetched in parallel (ai.js)
-//   3. User clicks Prefer A / Tie / Prefer B
-//   4. Preference record is saved to Supabase (db.js)
-//   5. History list updates; dataset grows
-
 import { startLogin, logout, renderAuthState, saveOpenAIKey } from './auth.js';
 import { loadFromSupabase, saveToSupabase, deleteFromSupabase } from './db.js';
 import { PROMPTS, generateResponses } from './ai.js';
 
-// ── App state ─────────────────────────────────────────────────────────────────
-let currentSession = null; // holds { prompt, resA, resB } between Generate and Prefer
-let history = [];          // in-memory mirror of the Supabase preferences table
+let currentSession = null;
+let history = [];
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 (async function init() {
@@ -31,7 +22,6 @@ let history = [];          // in-memory mirror of the Supabase preferences table
     sel.appendChild(opt);
   });
 
-  // Wire up event listeners (avoids inline onclick attributes in HTML)
   document.getElementById('loginBtn').addEventListener('click', startLogin);
   document.getElementById('logoutBtn').addEventListener('click', () => { logout(); renderAuthState(); });
   document.getElementById('saveKeyBtn').addEventListener('click', onSaveKey);
@@ -135,9 +125,9 @@ function onPrefer(choice) {
   }
   document.querySelectorAll('.pref-btn').forEach(b => b.disabled = true);
 
-  // Build the RLHF record.
-  // `chosen` and `rejected` are the standard fields expected by most
-  // fine-tuning pipelines (e.g. TRL's DPOTrainer).
+  const chosen   = choice === 'A' ? resA.text : choice === 'B' ? resB.text : null;
+  const rejected = choice === 'A' ? resB.text : choice === 'B' ? resA.text : null;
+
   const record = {
     id:        Date.now(),
     timestamp: new Date().toISOString(),
@@ -145,8 +135,8 @@ function onPrefer(choice) {
     response_a: resA.text,
     response_b: resB.text,
     preference: choice,
-    chosen:   choice === 'A' ? resA.text : choice === 'B' ? resB.text : null,
-    rejected: choice === 'A' ? resB.text : choice === 'B' ? resA.text : null,
+    chosen,
+    rejected,
     metadata: {
       model:           resA.model,
       temp_a:          resA.temperature,
@@ -192,9 +182,11 @@ function renderHistory() {
     const time  = r.created_at
       ? new Date(r.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
       : r.timestamp?.slice(0, 16).replace('T', ' ');
+    const promptText = (r.prompt || '').slice(0, 120);
+    const truncated  = (r.prompt || '').length > 120 ? '…' : '';
     return `
       <div class="history-entry">
-        <div class="history-prompt">${esc((r.prompt || '').slice(0, 120))}${(r.prompt || '').length > 120 ? '…' : ''}</div>
+        <div class="history-prompt">${esc(promptText)}${truncated}</div>
         <div class="history-meta">
           <span class="pref-label ${r.preference}">${label}</span>
           <span class="history-time">${time}</span>

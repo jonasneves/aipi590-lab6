@@ -75,43 +75,29 @@ function histPair(primary, compare, bins = 20) {
 
 // ── Public render functions ────────────────────────────────────────────────
 
-export function renderLengthBiasChart(deltas, cmpDeltas = null) {
-  const { primary, compare } = histPair(deltas, cmpDeltas);
+function renderHistogram(canvasId, values, cmpValues, primaryColor, compareColor, xLabel) {
+  const { primary, compare } = histPair(values, cmpValues);
   const datasets = [
-    { label: 'HH-RLHF',   data: primary.counts, backgroundColor: PURPLE, borderRadius: 3 },
-    ...(compare ? [{ label: 'Your data', data: compare.counts, backgroundColor: GREEN, borderRadius: 3 }] : []),
+    { label: 'HH-RLHF',   data: primary.counts, backgroundColor: primaryColor, borderRadius: 3 },
+    ...(compare ? [{ label: 'Your data', data: compare.counts, backgroundColor: compareColor, borderRadius: 3 }] : []),
   ];
-  mount('chartLen', 'bar',
+  mount(canvasId, 'bar',
     { labels: primary.labels, datasets },
     { ...baseOpts, plugins: { legend: compare ? legendOpts : { display: false } },
-      scales: baseScales('Word count delta (chosen − rejected)') }
+      scales: baseScales(xLabel) }
   );
+}
+
+export function renderLengthBiasChart(deltas, cmpDeltas = null) {
+  renderHistogram('chartLen', deltas, cmpDeltas, BLUE, GREEN, 'Word count delta (chosen − rejected)');
 }
 
 export function renderOverlapChart(overlaps, cmpOverlaps = null) {
-  const { primary, compare } = histPair(overlaps, cmpOverlaps);
-  const datasets = [
-    { label: 'HH-RLHF',   data: primary.counts, backgroundColor: GREEN,  borderRadius: 3 },
-    ...(compare ? [{ label: 'Your data', data: compare.counts, backgroundColor: ORANGE, borderRadius: 3 }] : []),
-  ];
-  mount('chartOverlap', 'bar',
-    { labels: primary.labels, datasets },
-    { ...baseOpts, plugins: { legend: compare ? legendOpts : { display: false } },
-      scales: baseScales('Bigram Jaccard similarity') }
-  );
+  renderHistogram('chartOverlap', overlaps, cmpOverlaps, BLUE, GREEN, 'Bigram Jaccard similarity');
 }
 
 export function renderSeparabilityChart(scores, cmpScores = null) {
-  const { primary, compare } = histPair(scores, cmpScores);
-  const datasets = [
-    { label: 'HH-RLHF',   data: primary.counts, backgroundColor: BLUE,   borderRadius: 3 },
-    ...(compare ? [{ label: 'Your data', data: compare.counts, backgroundColor: ORANGE, borderRadius: 3 }] : []),
-  ];
-  mount('chartSep', 'bar',
-    { labels: primary.labels, datasets },
-    { ...baseOpts, plugins: { legend: compare ? legendOpts : { display: false } },
-      scales: baseScales('Cosine distance (higher = more separable)') }
-  );
+  renderHistogram('chartSep', scores, cmpScores, BLUE, GREEN, 'Cosine distance (higher = more separable)');
 }
 
 // points: [{x,y}], labels: 'hh-chosen' | 'hh-rejected' | 'your-chosen' | 'your-rejected'

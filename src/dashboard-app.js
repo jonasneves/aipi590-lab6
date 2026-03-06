@@ -1,8 +1,3 @@
-// ── Dashboard Orchestration ────────────────────────────────────────────────
-// Two-phase pipeline:
-//   Phase 1 (Analyze): fetch HH-RLHF → instant metrics → embeddings
-//   Phase 2 (Compare): load Supabase pairs → same metrics → overlay on charts
-
 import { loadHHRLHF, loadSupabaseData }               from './dashboard-data.js';
 import { computeLengthBias, computeLexicalOverlap,
          computeSeparability, pca2d }                  from './dashboard-metrics.js';
@@ -10,9 +5,15 @@ import { embedTexts }                                   from './dashboard-embed.
 import { renderLengthBiasChart, renderOverlapChart,
          renderSeparabilityChart, renderScatterChart }  from './dashboard-charts.js';
 
-// Stored after phase 1 so phase 2 can re-render with both datasets.
-let _hhMetrics    = null; // { lenDeltas, overlaps, sepScores }
-let _hhEmbeddings = null; // Float32Array[]
+function pairsFromEmbeddings(pairs, embeddings) {
+  return pairs.map((_, i) => ({
+    chosen:   embeddings[i * 2],
+    rejected: embeddings[i * 2 + 1],
+  }));
+}
+
+let _hhMetrics    = null;
+let _hhEmbeddings = null;
 let _hhPairCount  = 0;
 
 document.getElementById('analyzeBtn').addEventListener('click', onAnalyze);
@@ -52,12 +53,7 @@ async function onAnalyze() {
       setProgress(`<span class="spinner"></span> ${msg}`)
     );
 
-    const pairEmbeds = pairs.map((_, i) => ({
-      chosen:   embeddings[i * 2],
-      rejected: embeddings[i * 2 + 1],
-    }));
-
-    const sep = computeSeparability(pairEmbeds);
+    const sep = computeSeparability(pairsFromEmbeddings(pairs, embeddings));
     setText('kpiSep', sep.median.toFixed(3));
     renderSeparabilityChart(sep.scores);
 
@@ -116,12 +112,7 @@ async function onCompare() {
       setProgress(`<span class="spinner"></span> ${msg}`)
     );
 
-    const pairEmbeds = pairs.map((_, i) => ({
-      chosen:   yourEmbeds[i * 2],
-      rejected: yourEmbeds[i * 2 + 1],
-    }));
-
-    const sep = computeSeparability(pairEmbeds);
+    const sep = computeSeparability(pairsFromEmbeddings(pairs, yourEmbeds));
     setSub('kpiSepSub', `yours: ${sep.median.toFixed(3)}`);
     renderSeparabilityChart(_hhMetrics.sepScores, sep.scores);
 
@@ -129,7 +120,7 @@ async function onCompare() {
     const allEmbeds = [..._hhEmbeddings, ...yourEmbeds];
     const points    = pca2d(allEmbeds);
     const labels    = [
-      ...Array(_hhEmbeddings.length).fill(null).map((_, i) =>
+      ...Array.from({ length: _hhEmbeddings.length }, (_, i) =>
         i % 2 === 0 ? 'hh-chosen' : 'hh-rejected'
       ),
       ...pairs.flatMap(() => ['your-chosen', 'your-rejected']),

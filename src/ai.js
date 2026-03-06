@@ -1,16 +1,5 @@
-// ── Layer 3: AI ────────────────────────────────────────────────────────────────
-// Handles all model API calls. Supports two backends:
-//   • GitHub Models (primary)  — authenticated via GitHub OAuth token
-//   • OpenAI API (fallback)    — authenticated via user-provided API key
-//
-// For RLHF data diversity, generateResponses() calls the same model twice
-// with different temperatures: 0.7 (focused) vs 1.0 (creative). The two
-// responses are run in parallel to minimise wait time.
-
 import { getGHAuth, getOpenAIKey, GH_MODELS_URL } from './auth.js';
 
-// Curated ethical-dilemma prompts that elicit meaningfully different responses
-// at different temperatures — making the A/B preference task non-trivial.
 export const PROMPTS = [
   "My startup has a chance to raise funding from a VC with well-known ethical controversies, but we need the money to survive another six months. What should I do?",
   "I'm two years into a PhD program and rapid AI progress is making my research direction feel irrelevant. Should I drop out and join an AI startup?",
@@ -43,15 +32,14 @@ export async function callAPI(prompt, temperature, fallbackToken = null) {
   const ghAuth = getGHAuth();
   const t0 = Date.now();
 
-  let url, token, model;
+  const model = 'gpt-4o-mini';
+  let url, token;
   if (ghAuth) {
     url   = GH_MODELS_URL;
     token = ghAuth.token;
-    model = 'gpt-4o-mini';
   } else {
     url   = 'https://api.openai.com/v1/chat/completions';
     token = getOpenAIKey() || fallbackToken;
-    model = 'gpt-4o-mini';
     if (!token) throw new Error('Sign in with GitHub or enter an OpenAI API key above.');
   }
 
@@ -86,10 +74,6 @@ export async function callAPI(prompt, temperature, fallbackToken = null) {
   };
 }
 
-// Fires two parallel requests with different temperatures to produce
-// Response A (temp=0.7, more focused) and Response B (temp=1.0, more varied).
-// The temperature difference is intentional — it increases the chance that
-// the two responses are meaningfully different, yielding better RLHF signal.
 export async function generateResponses(prompt, fallbackToken = null) {
   return Promise.all([
     callAPI(prompt, 0.7, fallbackToken),

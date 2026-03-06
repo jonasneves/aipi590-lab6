@@ -1,12 +1,9 @@
-// ── Layer 2: Database ──────────────────────────────────────────────────────────
-// Thin wrapper around Supabase's REST API (PostgreSQL under the hood).
-// The publishable key is safe to expose — row-level security is configured
-// on the Supabase side to allow anonymous reads and inserts on this table.
+// The publishable key is safe to expose; row-level security on Supabase
+// allows anonymous reads and inserts on this table.
 
 const SUPABASE_URL = 'https://mkjwvkaasuhdgmgdgmvc.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_py30014paACSfymw9BNoUQ_Ppysqtpx';
 
-// Internal helper: attaches auth headers and throws on non-2xx responses.
 async function sbFetch(path, options = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...options,
@@ -24,7 +21,6 @@ async function sbFetch(path, options = {}) {
   return res;
 }
 
-// Fetches all preference records, newest first.
 export async function loadFromSupabase() {
   const res = await sbFetch('preferences?select=*&order=created_at.desc', {
     headers: { 'Prefer': 'return=representation' },
@@ -32,8 +28,6 @@ export async function loadFromSupabase() {
   return res.json();
 }
 
-// Inserts a single preference record.
-// The `chosen`/`rejected` fields are the RLHF-ready format for fine-tuning.
 export async function saveToSupabase(record) {
   await sbFetch('preferences', {
     method: 'POST',
@@ -50,7 +44,7 @@ export async function saveToSupabase(record) {
   });
 }
 
-// Deletes all rows (used by the "Clear All" button).
 export async function deleteFromSupabase() {
+  // PostgREST requires a filter on DELETE; id=gte.0 matches all rows (IDs are positive).
   await sbFetch('preferences?id=gte.0', { method: 'DELETE' });
 }
